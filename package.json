@@ -1,0 +1,26 @@
+{
+  "name": "api-mock-seeder",
+  "version": "0.1.0",
+  "description": "Generate realistic, deterministic mock API data from OpenAPI, JSON Schema, or sample JSON files.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "src/cli.js",
+  "bin": {
+    "api-mock-seeder": "./bin/api-mock-seeder.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node ./bin/api-mock-seeder.js",
+    "generate": "node ./bin/api-mock-seeder.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "yaml": "^2.8.1"
+  }
+}
