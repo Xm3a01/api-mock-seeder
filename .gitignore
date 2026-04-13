@@ -1,5 +1,5 @@
-./node_modules
-./mocks
+node_modules/
+mocks/
 .codex
-DockerFile
+Dockerfile
 .dockerignore
