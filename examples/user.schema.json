@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "users": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "alex@example.com"
+          },
+          "name": {
+            "type": "string",
+            "example": "Alex Reed"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "active"
+        ]
+      }
+    },
+    "total": {
+      "type": "integer",
+      "example": 1
+    }
+  },
+  "required": [
+    "users",
+    "total"
+  ],
+  "example": {
+    "users": [
+      {
+        "id": 1,
+        "email": "alex@example.com",
+        "name": "Alex Reed",
+        "active": true
+      }
+    ],
+    "total": 1
+  }
+}

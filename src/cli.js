@@ -12,7 +12,7 @@ function usage() {
   return [
     "api-mock-seeder",
     "",
-    "Generate deterministic mock API response files from OpenAPI, JSON Schema, or sample JSON.",
+    "Generate deterministic mock API response files from OpenAPI, Postman collections, JSON Schema, or sample JSON.",
     "",
     "Usage:",
     "  api-mock-seeder generate <input-file> [--seed 42] [--out ./mocks] [--scenario happy-path]",

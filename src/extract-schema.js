@@ -287,6 +287,201 @@ function buildOperationName(method, routePath, status, operation) {
   return namedOperation || fallback || `response-${status}`;
 }
 
+function looksLikeJson(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  return (
+    (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+    (trimmed.startsWith("[") && trimmed.endsWith("]"))
+  );
+}
+
+function getHeaderValue(headers, headerName) {
+  if (!Array.isArray(headers)) {
+    return undefined;
+  }
+
+  const lowerHeaderName = headerName.toLowerCase();
+
+  for (const header of headers) {
+    if (!isObject(header) || typeof header.key !== "string") {
+      continue;
+    }
+
+    if (header.key.toLowerCase() === lowerHeaderName && typeof header.value === "string") {
+      return header.value;
+    }
+  }
+
+  return undefined;
+}
+
+function normalizePostmanUrl(url) {
+  if (typeof url === "string") {
+    return url;
+  }
+
+  if (!isObject(url)) {
+    return undefined;
+  }
+
+  if (typeof url.raw === "string" && url.raw.trim()) {
+    return url.raw;
+  }
+
+  const host = Array.isArray(url.host) ? url.host.join(".") : typeof url.host === "string" ? url.host : "";
+  const routePath = Array.isArray(url.path) && url.path.length ? `/${url.path.join("/")}` : "";
+
+  if (!host && routePath) {
+    return routePath;
+  }
+
+  if (host || routePath) {
+    return `${host}${routePath}`;
+  }
+
+  return undefined;
+}
+
+function getPostmanRequestMethod(item, response) {
+  const method =
+    (response &&
+      response.originalRequest &&
+      typeof response.originalRequest.method === "string" &&
+      response.originalRequest.method) ||
+    (item && item.request && typeof item.request.method === "string" && item.request.method);
+
+  return method ? method.toUpperCase() : undefined;
+}
+
+function getPostmanRequestPath(item, response) {
+  const requestUrl =
+    (response && response.originalRequest && response.originalRequest.url) ||
+    (item && item.request && item.request.url);
+
+  return normalizePostmanUrl(requestUrl);
+}
+
+function parsePostmanResponseExample(response) {
+  if (!isObject(response)) {
+    return undefined;
+  }
+
+  if (
+    response.body !== undefined &&
+    response.body !== null &&
+    typeof response.body !== "string"
+  ) {
+    return response.body;
+  }
+
+  if (typeof response.body !== "string") {
+    return undefined;
+  }
+
+  const contentType = getHeaderValue(response.header, "content-type");
+  const previewLanguage =
+    typeof response._postman_previewlanguage === "string" ? response._postman_previewlanguage : "";
+  const shouldParseJson =
+    /json/i.test(contentType || "") ||
+    /json/i.test(previewLanguage) ||
+    looksLikeJson(response.body);
+
+  if (!shouldParseJson) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(response.body);
+  } catch {
+    return undefined;
+  }
+}
+
+function buildPostmanTargetName(nameParts, method, routePath, status) {
+  const namedOperation = slugify(`${nameParts.filter(Boolean).join("-")}-${status}`);
+  const requestFallback = method && routePath ? slugify(`${method}-${routePath}-${status}`) : "";
+  return namedOperation || requestFallback || `postman-response-${status}`;
+}
+
+function walkPostmanItems(items, ancestors, visit) {
+  if (!Array.isArray(items)) {
+    return;
+  }
+
+  for (const item of items) {
+    if (!isObject(item)) {
+      continue;
+    }
+
+    const nextAncestors = item.name ? [...ancestors, item.name] : ancestors;
+
+    if (Array.isArray(item.item)) {
+      walkPostmanItems(item.item, nextAncestors, visit);
+    }
+
+    visit(item, nextAncestors);
+  }
+}
+
+function extractPostmanTargets(document) {
+  const targets = [];
+  const usedNames = new Map();
+
+  walkPostmanItems(document.item, [], (item, ancestors) => {
+    const responses = Array.isArray(item.response) ? item.response : [];
+
+    for (const response of responses) {
+      const example = parsePostmanResponseExample(response);
+
+      if (example === undefined) {
+        continue;
+      }
+
+      const status =
+        response && response.code !== undefined
+          ? String(response.code)
+          : slugify(response && (response.status || response.name || "response"));
+      const baseName = buildPostmanTargetName(
+        ancestors,
+        getPostmanRequestMethod(item, response),
+        getPostmanRequestPath(item, response),
+        status
+      );
+      const count = (usedNames.get(baseName) || 0) + 1;
+      usedNames.set(baseName, count);
+
+      targets.push({
+        example,
+        name: count === 1 ? baseName : `${baseName}-${count}`,
+        schema: inferSchemaFromSample(example),
+        source: {
+          kind: "postman-collection",
+          method: getPostmanRequestMethod(item, response),
+          path: getPostmanRequestPath(item, response),
+          status
+        }
+      });
+    }
+  });
+
+  if (!targets.length) {
+    throw new Error(
+      "No JSON example responses were found in the Postman collection. Save at least one JSON response example and export the collection again."
+    );
+  }
+
+  return targets;
+}
+
 function extractOpenApiTargets(document, inputPath) {
   const targets = [];
 
@@ -337,6 +532,10 @@ function extractOpenApiTargets(document, inputPath) {
 function extractSchema({ document, inputType, inputPath }) {
   if (inputType === "openapi") {
     return extractOpenApiTargets(document, inputPath);
+  }
+
+  if (inputType === "postman-collection") {
+    return extractPostmanTargets(document);
   }
 
   if (inputType === "json-schema") {
