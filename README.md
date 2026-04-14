@@ -1,5 +1,7 @@
 # api-mock-seeder
 
+[GitHub Repository](https://github.com/Xm3a01/api-mock-seeder)
+
 `api-mock-seeder` is a small Node.js CLI for generating deterministic mock API data from:
 
 - OpenAPI documents

@@ -2,11 +2,19 @@
   "name": "api-mock-seeder",
   "version": "0.1.0",
   "description": "Generate realistic, deterministic mock API data from OpenAPI, JSON Schema, or sample JSON files.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xm3a01/api-mock-seeder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Xm3a01/api-mock-seeder/issues"
+  },
+  "homepage": "https://github.com/Xm3a01/api-mock-seeder#readme",
   "license": "MIT",
   "type": "commonjs",
   "main": "src/cli.js",
   "bin": {
-    "api-mock-seeder": "./bin/api-mock-seeder.js"
+    "api-mock-seeder": "bin/api-mock-seeder.js"
   },
   "files": [
     "bin",
